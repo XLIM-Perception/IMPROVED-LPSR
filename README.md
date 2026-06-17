@@ -16,7 +16,7 @@ Contrairement à des modèles classiques (bicubique, EDSR) ou à des modèles en
 Nous avons sélectionné la **version ×2** car elle offre le meilleur compromis entre **gain de netteté** et **préservation de la structure** des caractères de la plaque.  
 Le résultat est une image **deux fois plus grande** (largeur et hauteur doublées) avec des caractères **nettement plus lisibles**, même lorsque la plaque d’origine est sévèrement dégradée.
 
-> ⚠️ **Avertissement :** Ce modèle est susceptible d’évoluer. Les poids fournis (`weights_x2_v0.1_v0.1.pth`) peuvent être mis à jour dans le futur pour améliorer les performances ou s’adapter à de nouvelles conditions.
+> ⚠️ **Avertissement :** Ce modèle est susceptible d’évoluer. Les poids fournis (`weights_x2_v0.1.pth`) peuvent être mis à jour dans le futur pour améliorer les performances ou s’adapter à de nouvelles conditions.
 
 ## Contenu du dépôt
 
