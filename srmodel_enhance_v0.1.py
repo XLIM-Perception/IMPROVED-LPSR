@@ -26,7 +26,7 @@ from tqdm import tqdm
 # 1. Locate the weights file
 # -------------------------------------------------------------------
 SCRIPT_DIR = Path(__file__).resolve().parent
-WEIGHTS_FILE = SCRIPT_DIR / "weights_x2.pth"
+WEIGHTS_FILE = SCRIPT_DIR / "weights_x2_v0.1.pth"
 
 def get_weights_path():
     """
@@ -36,13 +36,13 @@ def get_weights_path():
     if WEIGHTS_FILE.exists():
         return str(WEIGHTS_FILE)
 
-    # If missing, ask user if they want to download
+    
     print("=" * 60)
     print("Model weights not found in the script folder.")
     print(f"Expected location: {WEIGHTS_FILE}")
     answer = input("Download them now? (~67 MB) [Y/n]: ").strip().lower()
     if answer and answer != 'y':
-        print("Aborting. Please place 'weights_x2.pth' next to the script.")
+        print("Aborting. Please place 'weights_x2_v0.1.pth' next to the script.")
         sys.exit(1)
 
 
@@ -105,7 +105,7 @@ def enhance_image(upsampler, img_bgr):
 # 3. Command‑line interface
 # -------------------------------------------------------------------
 def main():
-    parser = argparse.ArgumentParser(description="Real-ESRGAN x2 License Plate Enhancer")
+    parser = argparse.ArgumentParser(description="A Real-ESRGAN based x2 License Plate Enhancer")
     parser.add_argument("--input", required=True, help="Image file or directory")
     parser.add_argument("--output", default=None, help="Output file (single image) or output directory (batch)")
     parser.add_argument("--device", default="cuda", choices=["cuda", "cpu"])
