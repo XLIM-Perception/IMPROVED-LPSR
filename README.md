@@ -8,8 +8,8 @@ La v0.1 (Real‑ESRGAN ×2, modèle générique) **est retirée**. Elle rend les
 
 La v0.2 a un autre objectif : être **fidèle** aux images de la caméra.
 
-- **Elle combine les 10 images.** Le détail est ainsi récupéré à partir de ce que la caméra a réellement enregistré, plutôt qu'inventé à partir d'une seule image.
-- **Elle a été entraînée sur de vraies paires basse / haute résolution** (20 000 séquences de plaques réelles filmées par des caméras de surveillance Brézile-Mercosur). Elle a ensuite été adaptée aux caméras françaises : chaque image doit pouvoir être reproduite à partir des autres.
+- **Elle combine les 10 images.** Le détail est ainsi récupéré à partir de ce que la caméra a réellement enregistré, plutôt que d'être inventé à partir d'une seule image.
+- **Elle a été entraînée sur de vraies paires basse/haute résolution** (20 000 séquences de plaques réelles filmées par des caméras de surveillance Brésil-Mercosur). Elle a ensuite été adaptée aux caméras françaises : chaque image doit pouvoir être reproduite à partir des autres.
 - **Quand l'information manque, l'image reste floue** au lieu d'afficher un caractère inventé : l'incertitude reste visible.
 
 ## Résultats mesurés
@@ -82,12 +82,12 @@ Sortie :
 ## Détails techniques
 
 - **Réseau :**
-  - encodeur par image (4 blocs à attention de canal) ;
+  - encodeur par image (4 blocs d'attention de canal) ;
   - alignement déformable sur l'image de référence ;
   - fusion temporelle pondérée par la similarité avec la référence ;
   - reconstruction (5 groupes × 8 blocs) puis agrandissement ×2 ou ×4.
 
-  96 canaux, 8,8 M paramètres. Chaque image de la séquence sert tour à tour de référence.
+  96 canaux, 8,8 M paramètres. Chaque image de la séquence sert à tour de rôle de référence.
 - **Entraînement :**
   - paires réelles basse / haute résolution du jeu d'entraînement de la compétition ICPR 2026 *Low‑Resolution License Plate Recognition* (plaques brésiliennes et Mercosur), avec une perte de reconstruction tolérante aux petits décalages et une perte de lisibilité (lecteur figé) ;
   - adaptation aux caméras françaises par auto‑supervision **sans étiquette** : l'image restaurée, recalée et réduite, doit reproduire une image retirée de la séquence.
