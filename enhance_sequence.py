@@ -20,10 +20,11 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-import torch
 from PIL import Image, ImageDraw, ImageFont
 
-from lpsr.model import MFSR
+from lpsr import LPSREnhancer
+# Keep the existing helper imports available to callers of this demo module.
+from lpsr.inference import enhance, to_tensor
 
 MARGIN_X, MARGIN_Y = 0.25, 0.5          # marge ajoutée autour de la boîte plaque (fraction largeur / hauteur)
 WARNING = ("Image améliorée : aide visuelle à l'enquête, ne constitue pas une preuve. "
@@ -48,24 +49,6 @@ def load_sequence(folder):
                 for d in json.load(open(det))]
     return [(p.name, cv2.imread(str(p))) for p in sorted(folder.glob('*'))
             if p.suffix.lower() in ('.png', '.jpg', '.jpeg', '.bmp')]
-
-
-def to_tensor(frames, device):
-    x = np.stack([cv2.cvtColor(f, cv2.COLOR_BGR2RGB) for f in frames]).transpose(0, 3, 1, 2).astype(np.float32) / 255
-    return torch.from_numpy(x)[None].to(device)
-
-
-@torch.no_grad()
-def enhance(model, crops, device):
-    """Each frame in turn is the reference; the other frames are resized onto it (same margins)."""
-    out = []
-    for ref in range(len(crops)):
-        h, w = crops[ref].shape[:2]
-        seq = [crops[ref]] + [cv2.resize(crops[i], (w, h), interpolation=cv2.INTER_CUBIC)
-                              for i in range(len(crops)) if i != ref]
-        y = model(to_tensor(seq, device))[0].clamp(0, 1).cpu().numpy().transpose(1, 2, 0)
-        out.append(cv2.cvtColor((y * 255).round().astype(np.uint8), cv2.COLOR_RGB2BGR))
-    return out
 
 
 def contact_sheet(originals, bicubic, enhanced, scale, path):
@@ -97,13 +80,14 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--input', required=True)
     ap.add_argument('--output', required=True)
-    ap.add_argument('--scale', type=int, default=2, choices=[2, 4])
+    ap.add_argument('--scale', type=int, default=None, choices=[2, 4],
+                    help='facteur lu dans les poids ; sans --weights, sélectionne les poids x2 par défaut')
     ap.add_argument('--weights', default=None, help='par défaut : weights_lpsr_v0.2_x2.pth / _x4.pth selon --scale')
-    ap.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
+    ap.add_argument('--device', default=None, help='par défaut : CUDA si disponible, sinon CPU')
     ap.add_argument('--no_sheet', action='store_true', help='ne pas produire la planche comparative')
     args = ap.parse_args()
 
-    weights = args.weights or str(Path(__file__).parent / f'weights_lpsr_v0.2_x{args.scale}.pth')
+    weights = args.weights or str(Path(__file__).parent / f'weights_lpsr_v0.2_x{args.scale or 2}.pth')
     out = Path(args.output)
     out.mkdir(parents=True, exist_ok=True)
     seq = load_sequence(args.input)
@@ -111,21 +95,20 @@ def main():
         raise SystemExit(f'Aucune image trouvée dans {args.input}')
     names, crops = zip(*seq)
 
-    state = torch.load(weights, map_location=args.device)
-    model = MFSR(**state['model_cfg']).to(args.device).eval()
-    model.load_state_dict(state['mfsr'])
-    if model.scale != args.scale:
-        raise SystemExit(f'{weights} est un modèle x{model.scale}, pas x{args.scale}')
+    enhancer = LPSREnhancer(weights, device=args.device)
+    scale = enhancer.scale
+    if args.scale is not None and scale != args.scale:
+        raise SystemExit(f'{weights} est un modèle x{scale}, pas x{args.scale}')
 
-    enhanced = enhance(model, list(crops), args.device)
-    bicubic = [cv2.resize(c, None, fx=args.scale, fy=args.scale, interpolation=cv2.INTER_CUBIC) for c in crops]
+    enhanced = enhancer.enhance(list(crops))
+    bicubic = [cv2.resize(c, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC) for c in crops]
     for k, (c, b, e) in enumerate(zip(crops, bicubic, enhanced)):
         cv2.imwrite(str(out / f'plaque_{k:02d}_originale.png'), c)
-        cv2.imwrite(str(out / f'plaque_{k:02d}_bicubique_x{args.scale}.png'), b)
-        cv2.imwrite(str(out / f'plaque_{k:02d}_amelioree_x{args.scale}.png'), e)
+        cv2.imwrite(str(out / f'plaque_{k:02d}_bicubique_x{scale}.png'), b)
+        cv2.imwrite(str(out / f'plaque_{k:02d}_amelioree_x{scale}.png'), e)
     if not args.no_sheet:
-        contact_sheet(crops, bicubic, enhanced, args.scale, out / 'planche.png')
-    print(f'{len(names)} images améliorées (x{args.scale}) -> {out}')
+        contact_sheet(crops, bicubic, enhanced, scale, out / 'planche.png')
+    print(f'{len(names)} images améliorées (x{scale}) -> {out}')
     print(WARNING)
 
 
