@@ -1,5 +1,3 @@
-torch>=2.1
-torchvision>=0.16
-opencv-python
-numpy
-pillow
+# Depuis la racine du depot, installer le projet courant (.) via pyproject.toml.
+# [demo] ajoute le supplement de demonstration, ici Pillow.
+.[demo]
